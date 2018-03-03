@@ -9,7 +9,7 @@ sys.path.append('F:\libsvm-3.22\python')
 
 from svmutil import *
 
-path = 'specific features dataset/'
+path = 'F:/clone/multi-label-dataset/specific features dataset/'
 dataset = 'emotions_sfeatures_all.mat'
 
 class LIFT(object):

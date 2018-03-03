@@ -53,7 +53,7 @@ def sort(x):
         sortX.append(Min)
         index.append(Min_j)
         temp[Min_j] = float("inf")
-    return temp,index
+    return sortX,index
 
 def findIndex(a, b):
     for i in range(len(b)):
@@ -115,7 +115,7 @@ def Coverage(outputs, test_target):
             if loc < temp_min:
                 temp_min = loc
         cover = cover + (class_num - temp_min)
-    return (cover/test_data_num - 1)
+    return (cover/test_data_num - 1)/class_num
     
 def HammingLoss(predict_labels, test_target):
     labels_num = predict_labels.shape[1]
