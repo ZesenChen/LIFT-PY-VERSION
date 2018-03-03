@@ -10,20 +10,27 @@ sys.path.append('F:\libsvm-3.22\python')
 from svmutil import *
 
 path = 'F:/clone/multi-label-dataset/specific features dataset/'
-dataset = 'emotions_sfeatures_all.mat'
+dataset = 'genbase_sfeatures_all.mat'
 
 class LIFT(object):
     def __init__(self, sf_num):
         self.feat_num = sf_num
         self.svm = []
-
+        self.binary = []
+        
     def fit(self, train_data, train_target):
         #sp_features = []
+        self.train_data = train_data
+        self.train_target = train_target
         data_num,class_num = train_target.shape
         for i in range(class_num):
             begin = int(sum(self.feat_num[:i]))
             end = int(begin + self.feat_num[i])
-            #print(train_data[:,begin:end].tolist())
+            if sum(train_target[:,i])==0: 
+                self.binary.append(0)
+            elif sum(train_target[:,i])==data_num:
+                self.binary.append(1)
+            else: self.binary.append(2)
             prob = svm_problem(train_target[:,i].tolist(), \
                                train_data[:,begin:end].tolist())
             param = svm_parameter()
@@ -39,11 +46,16 @@ class LIFT(object):
         for i in range(class_num):
             begin = sum(self.feat_num[:i])
             end = begin + self.feat_num[i]
-            pre_labels[:,i],tmp,tmpoutputs = svm_predict(test_target[:,i].tolist(), \
+            tmp_pre_labels,tmp,tmpoutputs = svm_predict(test_target[:,i].tolist(), \
                                                          test_data[:,begin:end].tolist(), \
                                                          self.svm[i],'-b 1')
-            pos_index = 0 if self.svm[i].label[0]==1 else 1
-            outputs[:,i] = np.array(tmpoutputs)[:,pos_index]
+            if self.binary[i] == 2:
+                pre_labels[:,i] = tmp_pre_labels
+                pos_index = 0 if self.svm[i].label[0]==1 else 1
+                outputs[:,i] = np.array(tmpoutputs)[:,pos_index]
+            else:
+                pre_labels[:,i] = self.binary[i]
+                outputs[:,i] = self.binary[i]
             
         return [ev.HammingLoss(pre_labels,test_target),
                 ev.rloss(outputs,test_target),
