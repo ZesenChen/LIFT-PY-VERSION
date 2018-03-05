@@ -4,17 +4,18 @@ import evaluate as ev
 import scipy.io as sio
 from sklearn.svm import SVC
 from sklearn import model_selection
-from sklearn.feature_selection import SelectFromModel
-from sklearn.linear_model import RandomizedLasso,RandomizedLogisticRegression
-from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.svm import LinearSVC
+from sklearn.feature_selection import SelectFromModel,RFE,RFECV
+from sklearn.linear_model import RandomizedLasso,RandomizedLogisticRegression,Ridge
+from sklearn.ensemble import ExtraTreesClassifier,RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.preprocessing import scale
 
 sys.path.append('F:\libsvm-3.22\python')
 
 from svmutil import *
 
 path = 'F:/clone/multi-label-dataset/specific features dataset/'
-dataset = 'enron_sfeatures_all.mat'
+dataset = 'recreation_sfeatures_all.mat'
 
 class EM_LIFT(object):
     def __init__(self, sf_num):
@@ -41,12 +42,13 @@ class EM_LIFT(object):
                 self.svm.append([])
             else:
                 self.binary.append(2)
-                rlogr = ExtraTreesClassifier()
+                svc = Ridge()
+                rfe = SelectFromModel(svc)
                 #rlasso = rlogr.fit(train_data,train_target[:,i])
-                model = SelectFromModel(rlogr)
-                model.fit(train_data,train_target[:,i])
-                self.feat_sel_model.append(model)
-                new_train_data = model.transform(train_data)
+                #model = SelectFromModel(rlogr)
+                rfe.fit(train_data,train_target[:,i])
+                self.feat_sel_model.append(rfe)
+                new_train_data = rfe.transform(train_data)
                 prob = svm_problem(train_target[:,i].tolist(), \
                                    new_train_data.tolist())
                 param = svm_parameter()
@@ -79,7 +81,7 @@ class EM_LIFT(object):
     
 if __name__ == '__main__':
     Set = sio.loadmat(path+dataset)
-    sf_num,data,target = Set['sf_num'][0],Set['data'],Set['target']
+    sf_num,data,target = Set['sf_num'][0],scale(Set['data']),Set['target']
     target[target==-1]=0
     kf = model_selection.KFold(n_splits=10, shuffle=True, random_state=2017)
     emlift = EM_LIFT(sf_num)
