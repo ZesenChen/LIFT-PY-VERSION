@@ -4,13 +4,15 @@ import evaluate as ev
 import scipy.io as sio
 from sklearn.svm import SVC
 from sklearn import model_selection
+from sklearn.preprocessing import scale
 
 sys.path.append('F:\libsvm-3.22\python')
 
 from svmutil import *
 
-path = 'F:/clone/multi-label-dataset/specific features dataset/'
-dataset = 'genbase_sfeatures_all.mat'
+path = 'F:/clone/multi-label-dataset/sf dataset/'
+dataset = 'yeast'
+fold_num = 10
 
 class LIFT(object):
     def __init__(self, sf_num):
@@ -64,26 +66,28 @@ class LIFT(object):
                 ev.avgprec(outputs,test_target)]
     
 if __name__ == '__main__':
-    Set = sio.loadmat(path+dataset)
-    sf_num,data,target = Set['sf_num'][0],Set['data'],Set['target']
-    target[target==-1]=0
-    kf = model_selection.KFold(n_splits=10, shuffle=True, random_state=2017)
-    lift = LIFT(sf_num)
-    result = [0]*5
-    j = 0;
-    for dev_index, val_index in kf.split(data):
-        j = j+1
-        print('the',j,'th circle.')
-        dev_X, val_X = data[dev_index,:],data[val_index,:]
-        dev_y, val_y = target[dev_index,:],target[val_index,:]
-        lift.fit(dev_X,dev_y)
-        tmp = lift.predict(val_X,val_y)
-        result = [result[i]+tmp[i] for i in range(5)]
+    result = np.zeros((10,5))
+    for i in range(fold_num):
+        print('the ',i,'th fold.')
+        filename = path+dataset+'/'+dataset+'_sf_'+str(i+1)+'_fold.mat'
+        Set = sio.loadmat(filename)
+        sf_num,train_data,train_target,test_data,test_target = \
+        Set['sf_num'][0],Set['train_data'],Set['train_target'], \
+        Set['test_data'],Set['test_target']
+        train_target[train_target==-1]=0
+        test_target[test_target==-1]=0
+        #kf = model_selection.KFold(n_splits=10, shuffle=True, random_state=2017)
+        lift = LIFT(sf_num)
+        lift.fit(train_data,train_target)
+        tmp = lift.predict(test_data,test_target)
+        result[i] = np.array(tmp)
     #print(result)
-    print('Hamming Loss:',result[0]/10)
-    print('Ranking Loss:',result[1]/10)
-    print('Coverage:',result[2]/10)
-    print('One Error:',result[3]/10)
-    print('Average Precision:',result[4]/10)
+    mean = np.mean(result,0)
+    std = np.std(result,0)
+    print('Hamming Loss:',mean[0],'+-',std[0])
+    print('Ranking Loss:',mean[1],'+-',std[1])
+    print('Coverage:',mean[2],'+-',std[2])
+    print('One Error:',mean[3],'+-',std[3])
+    print('Average Precision:',mean[4],'+-',std[4])
 
 
